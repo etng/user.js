@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Show URL instead of QR
 // @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  直接显示二维码中的链接，用手机扫描太麻烦了
+// @version      0.2·
+// @description  直接显示二维码中的链接，用手机扫描太麻烦了。比如动漫领域的磁链...
 // @author       etng
 // @match        *://dmly.me/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=dmly.me

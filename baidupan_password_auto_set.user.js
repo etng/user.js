@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        度盘密码自动化
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  自动拼接密码到网址，点击过的高亮显示
 // @author       etng
 // @match        *://fanxinzhui.com/rr/*
