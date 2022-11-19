@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name        度盘密码自动化
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  自动拼接密码到网址，点击过的高亮显示
 // @author       etng
 // @match        *://fanxinzhui.com/rr/*
+// @match        *://www.fanxinzhui.com/rr/*
 // @match        *://www.ghxi.com/*
+// @match        *://subs.kamigami.org/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=fanxinzhui.com
 // @grant        GM_notification
 // ==/UserScript==
@@ -31,16 +33,31 @@
         return textNodes
     };
     var cnt=0;
-    $('a[href^="https://pan.baidu"]').each((k,v)=>{
-        var a=$(v);
-        var url=a.attr('href')
-        if(url.indexOf('?pwd=')==-1){
+    $('a[href^="https://pan.baidu"]').each((k, v) => {
+        var a = $(v);
+        var url = a.attr('href');
+        if (url.indexOf('?pwd=') == -1) {
             var pswd = a.closest('span').find('a.password')
-            if(pswd){
-                a.attr('href', url+'?pwd='+pswd.text())
+            var pswdTxt=""
+            if (pswd.length) {
+                pswdTxt = pswd.text()
+            } else {
+                var keyword="密码："
+                try{
+                    getTextNodes(v.parentNode, keyword).forEach((linkNode) => {
+                        pswdTxt = linkNode.textContent.split(keyword)[1].trim()
+                        throw new Error("Found")
+                    })
+                }catch(e){
+                    if(e.message=="Found"){
+                    }
+                }
+            }
+            if(pswdTxt){
+                a.attr('href', url + '?pwd=' + pswdTxt)
                 pswd.hide()
                 a.css('font-size', '24px')
-                cnt+=1
+                cnt += 1
             }
         }
     })
