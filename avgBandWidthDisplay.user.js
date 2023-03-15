@@ -1,0 +1,108 @@
+// ==UserScript==
+// @name         带宽统计增强
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  不需要那么多
+// @author       易波
+// @match        https://35.229.165.10:29433/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=165.10
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    var ShowLatestDays = 7; // 显示最近多少天的数据
+    var MaxAvgTimesw = 4; // Y轴限高
+    //---------------以下代码请勿修改-----------------
+    var parentNode;
+    var data={}
+    $('.panel-body script').each((i, x)=>{
+        var chartParams = JSON.parse(x.innerText.slice('echartsKmgV2('.length, -2))
+        var panel = $(x).closest('.panel')
+        var title = panel.find('>.panel-heading').text().split(' ')[0]
+        data[title]=chartParams
+        parentNode = panel.parent()
+    })
+
+    data.AvgBandwidth={
+        DomId:"chartAvgBandwidth",
+        YMin: +Infinity,
+        YMax: -Infinity,
+        Data: [],
+    }
+    var YTotal = 0
+    var YCnt = 0
+    var sevenDaysAgo=+moment().subtract(3, 'days')
+    data.UserCount.Data.forEach((item, idx) => {
+        var bwItem = data.Bandwidth.Data[idx]
+        // console.log(idx, item, bwItem)
+        if (item[0]<sevenDaysAgo){
+            return
+        }
+        if (item[0]==bwItem[0]){
+            var avgBw = bwItem[1]/item[1]
+
+
+            if (avgBw==Infinity){
+                console.log(bwItem[1], item[1], "got Infinity")
+            } else{
+                // console.log(item[0], bwItem[1], item[1], avgBw)
+                data.AvgBandwidth.Data.push([
+                    item[0],
+                    avgBw,
+                ])
+                if (data.AvgBandwidth.YMax<avgBw){
+                    data.AvgBandwidth.YMax=avgBw
+                }
+                if (data.AvgBandwidth.YMin>avgBw){
+                    data.AvgBandwidth.YMin=avgBw
+                }
+                YTotal+=avgBw
+                YCnt++
+            }
+        }
+    });
+    var YAvg = YTotal/YCnt
+    if (data.AvgBandwidth.YMax > MaxAvgTimesw*YAvg){
+        data.AvgBandwidth.YMax = MaxAvgTimesw*YAvg
+    }
+    //console.log("YAvg", YTotal,YCnt, YAvg)
+    parentNode.append(`<div class="panel panel-default">
+<div class="panel-heading">AvgBandwidth</div>
+<div class="panel-body">
+    <div style="height:220px;overflow:hidden;">
+        <div id="chartAvgBandwidth"  style="margin: 5px; width: 100%; height: 200px; -webkit-tap-highlight-color: transparent; user-select: none; position: relative;">
+
+        </div>
+    </div>
+</div>
+</div>`)
+    console.log(data.AvgBandwidth)
+    echartsKmgV2(data.AvgBandwidth)
+    setTimeout(()=>{
+        var dom=document.getElementById('chartAvgBandwidth')
+        var chart=echarts.getInstanceByDom(dom)
+        window.zchart = chart
+        // console.log(chart)
+        var option=chart.getOption()
+        console.log(option)
+        option.series[0].markLine=   {
+            lineStyle: {
+                color:"#f00"
+            },
+            data: [{
+                name: '报警预测值',
+                yAxis: YAvg
+            }],
+        }
+        option.markLine = null
+        option.animation = true;
+        console.log(option)
+        // chart.setOption(option)
+        chart.dispose()
+        var newChart=echarts.init(dom)
+        newChart.setOption(option)
+        window.zchart = newChart
+    }, 2000)
+    // https://echarts.apache.org/en/api.html#echarts
+})();
