@@ -17,14 +17,22 @@
     //---------------以下代码请勿修改-----------------
     var parentNode;
     var data = {}
-    $('.panel-body script').each((i, x) => {
-        var chartParams = JSON.parse(x.innerText.slice('echartsKmgV2('.length, -2))
-        var panel = $(x).closest('.panel')
-        var title = panel.find('>.panel-heading').text().split(' ')[0]
-        data[title] = chartParams
-        parentNode = panel.parent()
-    })
-
+    try{
+        $('.panel-body script').each((i, x) => {
+            var chartParams = JSON.parse(x.innerText.slice('echartsKmgV2('.length, -2))
+            var panel = $(x).closest('.panel')
+            var title = panel.find('>.panel-heading').text().split(' ')[0]
+            data[title] = chartParams
+            parentNode = panel.parent()
+        })
+    }catch(e){
+        console.log("no chart yet");
+        return
+    }
+    if(!Object.entries(a).length){
+        console.log("no chart yet");
+        return
+    }
     data.AvgBandwidth = {
         DomId: "chartAvgBandwidth",
         YMin: +Infinity,
