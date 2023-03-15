@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         带宽统计增强
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.2.1
 // @description  增加对应的图表
 // @author       易波
-// @match        https://35.229.165.10:29433/*
+// @match        https://*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=165.10
 // @grant        none
 // ==/UserScript==
@@ -29,8 +29,12 @@
         console.log("no chart yet");
         return
     }
-    if(!Object.entries(a).length){
+    if(!Object.entries(data).length){
         console.log("no chart yet");
+        return
+    }
+    if(!(data.UserCount && data.Bandwidth)){
+        console.log("miss some chart");
         return
     }
     data.AvgBandwidth = {
