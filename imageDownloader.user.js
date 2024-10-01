@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         网页图片下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  下载网页中的图片
+// @version      1.1
+// @description  下载网页中的图片，按顺序排列好，你可以直接转换为pdf，方便查看
+// @author       etng
 // @match        https://mp.weixin.qq.com/s/*
-// @require     https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js
+// @require      https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
@@ -13,36 +14,24 @@
     'use strict';
 
     // 创建按钮和样式
-    const btnDownloadImages = createButton('下载图片');
+    const btnDownloadImages = createButton('下载为图片');
     const btnDownloadPdf = createButton('下载为PDF');
     const qrCodeImg = document.createElement('img');
     qrCodeImg.src = 'https://github.com/etng/user.js/raw/main/appraise.jpg'; // 替换为二维码图片的实际URL
-    qrCodeImg.style.width = '100px';
-    qrCodeImg.style.height = '100px';
+    qrCodeImg.style.width = '160px';
+    qrCodeImg.style.height = '160px';
     const downloadBtnContainer = document.createElement('div');
 
     // 按钮容器的样式设置
     Object.assign(downloadBtnContainer.style, {
-        position: 'fixed',
-        right: '50px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        padding: '10px',
-        backgroundColor: '#f0f0f0',
-        color: '#000',
-        border: '1px solid #007bff',
-        borderRadius: '5px',
-        cursor: 'pointer',
-        fontSize: '16px',
-        zIndex: '1000',
+        borderTop: '1px solid #fff',
+
         display: 'none',
         flexDirection: 'column',
         alignItems: 'center'
     });
-
-    const toggleBtn = document.createElement('div');
-    toggleBtn.innerText = '工具';
-    Object.assign(toggleBtn.style, {
+    const ui = document.createElement('div');
+    Object.assign(ui.style, {
         position: 'fixed',
         right: '20px',
         top: '50%',
@@ -54,17 +43,43 @@
         borderRadius: '5px',
         cursor: 'pointer',
         fontSize: '16px',
-        zIndex: '1001' // 确保比 downloadBtnContainer 更高的 z-index
+        zIndex: '1001'  
     });
-
+    const toggleBtn = document.createElement('div');
+    toggleBtn.innerText = '页面图片处理工具';
+    Object.assign(toggleBtn.style, {
+        padding: '5px',
+        backgroundColor: '#007bff',
+        color: '#fff',
+        // border: '1px solid #fff',
+        // borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '16px',
+    });
+    const tipsDiv = document.createElement('ul');
+    ;['点击下载按钮后等待图片下载完成','然后剔除不想要的广告内图片即可(后续会考虑自动去掉)'].forEach(line=>{
+        let li = document.createElement('li');
+        li.innerText = line;
+        tipsDiv.appendChild(li);
+    })
+    Object.assign(tipsDiv.style, {
+        padding: '5px',
+        backgroundColor: '#000',
+        color: '#eee',
+        fontSize: '12px',
+    });
+    const imageCntSpan = document.createElement('span');
     // 将按钮和二维码图片添加到容器
     downloadBtnContainer.appendChild(btnDownloadImages);
-    downloadBtnContainer.appendChild(btnDownloadPdf);
+    // downloadBtnContainer.appendChild(btnDownloadPdf);
+    downloadBtnContainer.appendChild(tipsDiv);
+    downloadBtnContainer.appendChild(imageCntSpan);
     downloadBtnContainer.appendChild(qrCodeImg);
 
     // 将容器和切换按钮添加到页面
-    document.body.appendChild(toggleBtn);
-    document.body.appendChild(downloadBtnContainer);
+    ui.appendChild(toggleBtn);
+    ui.appendChild(downloadBtnContainer);
+    document.body.appendChild(ui);
 
     // 添加切换功能
     toggleBtn.addEventListener('click', () => {
@@ -78,7 +93,7 @@
         left: '50%',
         transform: 'translateX(-50%)',
         color: 'white',
-        padding: '10px',
+        padding: '5px',
         zIndex: '1002', // 确保比 toggleBtn 更高的 z-index
         display: 'none'
     };
@@ -112,15 +127,15 @@
         const btn = document.createElement('button');
         btn.innerText = text;
         Object.assign(btn.style, {
-            padding: '10px 20px',
+            // padding: '10px 20px',
             backgroundColor: '#007bff',
             color: '#fff',
             border: 'none',
             borderRadius: '5px',
             cursor: 'pointer',
-            fontSize: '16px',
+            fontSize: '12px',
             display: 'block',
-            marginBottom: '10px'
+            marginBottom: '5px'
         });
         return btn;
     }
@@ -156,17 +171,17 @@
         images.forEach((img) => {
             const src = img.getAttribute('data-src') || img.getAttribute('src');
             if (src) {
-                const match = src.match(/\/sz_mmbiz_(\w+)\//);
-                if (match && match[1]) {
-                    downloadLinks.push({ url: src, extension: match[1] });
+                const match = src.match(/\/(sz_)?mmbiz_(\w+)\//);
+                if (match && match[2]) {
+                    downloadLinks.push({ url: src, extension: match[2] });
                 } else {
-                    showInfo(`无法从地址提取文件后缀: ${src}`);
+                    console.log(`无法从地址提取文件后缀: ${src}`);
                 }
             } else {
                 showInfo('图片元素缺少有效的 src 或 data-src 属性');
             }
         });
-
+        imageCntSpan.innerText=`当前图片数量: ${downloadLinks.length}`
         return downloadLinks;
     }
 
@@ -176,7 +191,10 @@
         const activityName = getActivityName();
         const downloadLinks = getDownloadLinks();
 
-        if (downloadLinks.length === 0) return;
+        if (downloadLinks.length === 0) {
+            showError("无图片可下载")
+            return;
+        }
 
         for (let i = 0; i < downloadLinks.length; i++) {
             setTimeout(async () => {
@@ -207,7 +225,9 @@
     async function downloadPdf() {
         if (typeof window.jspdf === 'undefined') {
             // 如果 window.jspdf 仍然未定义，动态加载一次脚本
-            await loadJsPdfAsync(jsPdfBase64);
+            // await loadJsPdfAsync(jsPdfBase64);
+            showError(`PDF库加载失败，您可以直接在下载好的目录批量转换`);
+            return
         }
         await proceedWithPdfDownload();
     }
